@@ -97,28 +97,6 @@ $("[data-toggle=tooltip]").tooltip();
       console.log(file);
   };
   
-  self.loaded = ko.computed(function() {
-    var returnValue = true;
-    self.newMolecules().forEach(function(rna) {
-      returnValue = (returnValue && rna.loaded());
-    });
-    returnValue = (returnValue && self.submitted());
-    
-    // here the code to hide modal and push the new molecules if everything is loaded correctly
-    if((returnValue) && (self.inputError().length === 0)) {
-      console.log("everything should be loaded now, updating graph!");
-      $('#add').modal('hide');
-      rnaView.graph.deaf = false;
-
-      if (self.newMolecules().length > 0) {
-          console.log('trying to add data');
-          dataView.addData(self.newDatas());
-          self.newData([]);
-      }
-    }
-    return (returnValue);
-  });
-
   self.cancelAddData = function() {
     $('#add').modal('hide');
     // reset the file upload form
@@ -126,7 +104,7 @@ $("[data-toggle=tooltip]").tooltip();
     self.inputFile(null);
     // reset errors
     self.inputError('');
-    rnaView.graph.deaf = false;
+    dataView.viz.deaf = false;
   };
 
   self.parseData = function(lines) {
@@ -173,7 +151,7 @@ $("[data-toggle=tooltip]").tooltip();
   };
 }
 
-// Knockout view model for RNA
+// Knockout view model for new Data
 function DataViewModel() {
   var self = this;
   
@@ -185,33 +163,33 @@ function DataViewModel() {
     self.animation(true);
     
     self.datas().concat(array);
-    // add a new molecule to the graph
+
+    // add a new data to the visualization
     array.forEach( function(data) {
-      console.log(rna.header());
       self.viz.addData(data);
     });
   };
   /*jshint multistr: true */
   
-  self.colors = ko.observable('structure'); // the color scheme setting can be structure/sequence/pairprobabilities
-
+  // set some options
+  self.colors = ko.observable('structure'); 
   self.colors.subscribe(function(newValue) {
 
-      if (self.graph === null) {
+      if (self.viz === null) {
           console.log("graph is null, won't update the color");
     } else {
         if (newValue == 'custom') {
             console.log("Custom colors selected");
         }
         //console.log("self.graph:", self.graph.changeColorScheme);
-        self.graph.changeColorScheme(newValue);
+        self.viz.changeOption('option', 'newValue');
     }
   });
   
   self.showAdd = function() {
     $('#Submit').button('reset');
     $('#add').modal('show');
-    self.graph.deaf = true;
+    self.viz.deaf = true;
   };
 
   self.clearGraph = function() {
@@ -225,24 +203,16 @@ function DataViewModel() {
   };
 
   self.saveJSON = function() {
-      var data = {"rnas": self.graph.rnas, "extraLinks": self.graph.extraLinks};
+      var data = self.
       console.log('data:', data);
-      var data_string = JSON.stringify(data, function(key, value) {
-          //remove circular references
-          if (key == 'rna') {
-              return;
-          } else {
-              return value;
-          }
-
-      }, "\t");
+      var data_string = JSON.stringify(data);
 
       var blob = new Blob([data_string], {type: "application/json"});
       saveAs(blob, 'molecule.json')
   };
 
   self.savePNG = function() {
-    saveSvgAsPng(document.getElementById('plotting-area'), 'rna.png', 4);
+    saveSvgAsPng(document.getElementById('plotting-area'), 'vis.png', 4);
   };
   
   self.saveSVG = function() {
@@ -274,5 +244,5 @@ function DataViewModel() {
 var dataView = new DataViewModel();
 var addView = new AddViewModel();
 
-ko.applyBindings(rnaView, document.getElementById('chart'));
+ko.applyBindings(dataView, document.getElementById('chart'));
 ko.applyBindings(addView, document.getElementById('add'));
